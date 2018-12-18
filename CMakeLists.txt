@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}
     simplegraph.cpp
     simplesequencegraph.cpp
     limitgraph.cpp
+    limitsequencegraph.cpp
 )
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tbb)
