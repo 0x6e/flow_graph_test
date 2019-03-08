@@ -22,3 +22,6 @@ tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf
 find_package(TBB REQUIRED tbb_preview)
 
 target_link_libraries(${PROJECT_NAME} ${TBB_IMPORTED_TARGETS})
+
+find_package(Threads REQUIRED)
+target_link_libraries (${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})

@@ -1,28 +1,28 @@
 #include "parallelgraph.h"
 
 #include <iostream>
+#include <mutex>
 
 ParallelGraph::ParallelGraph(size_t maxParallel /*= 8*/)
     : m_maxParallel(maxParallel)
     , m_graph(new graph)
 {
-    // Just waste some cpu cycles and memory - simulate decompressing columns
-    auto f = [] (Message msg) -> Message {
-        std::cout << "Process node " << msg.id << std::endl;
-
+    auto f = [this] (Message msg) -> Message {
+        // Just waste some cpu cycles and memory - simulate decompressing columns
         const size_t size = 20000000;
-        msg.data = new float[size];
+        float* data = new float[size];
         for (auto i = 0U; i < size; ++i) {
-            msg.data[i] = static_cast<float>(msg.id);
-            msg.data[i]++;
-            msg.data[i]--;
+            data[i] = static_cast<float>(msg.id);
+            data[i]++;
+            data[i]--;
         }
 
         // Imagine some work was done here with decompressed data
+        processAsync(msg.id, data);
 
         // Cleanup
-        delete[] msg.data;
-        msg.data = nullptr;
+        delete[] data;
+        data = nullptr;
 
         return msg;
     };
@@ -57,10 +57,36 @@ void ParallelGraph::exec()
 {
     // Push some messages into the top of the graph to be processed - representing the column indices
     for (unsigned int i = 0; i < 1000; ++i) {
-        Message msg = { i, nullptr };
+        Message msg = { i };
         m_ordering->try_put(msg);
     }
 
     // Wait for the graph to complete
     m_graph->wait_for_all();
+}
+
+void ParallelGraph::processAsync(const size_t id, float *data)
+{
+    double beta;
+    {
+        // Simulate getting shared data
+        std::shared_lock lock(m_mutex);
+        beta = 0.0;
+    }
+
+    // Just waste some cpu cycles and memory - simulate calculations
+    const size_t size = 20000000;
+    for (auto i = 0U; i < size; ++i) {
+        data[i] = static_cast<float>(id);
+        data[i]++;
+        data[i]--;
+    }
+
+    {
+        // Simulate writing shared data
+        std::unique_lock lock(m_mutex);
+        beta = m_distribution(m_generator);
+        std::cout << "Process node " << id
+                  << "; beta: " << beta << std::endl;
+    }
 }
