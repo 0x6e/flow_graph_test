@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1.3)
 
 project(flow_graph_test)
 
@@ -11,6 +11,9 @@ add_executable(${PROJECT_NAME}
     limitgraph.cpp
     limitsequencegraph.cpp
 )
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tbb)
 include(${TBB_ROOT}/cmake/TBBBuild.cmake)
