@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME}
     simplesequencegraph.cpp
     limitgraph.cpp
     limitsequencegraph.cpp
+    parallelgraph.cpp
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
