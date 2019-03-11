@@ -17,14 +17,27 @@ public:
 
 private:
     struct Message {
-        unsigned int id;
+        unsigned int id = 0;
+        float* data = nullptr;
+        double beta = 0;
+
+        // needs copy?
+
+//        ~Message() {
+//            delete[] data;
+//            data = nullptr;
+//        }
     };
 
     size_t m_maxParallel = 8;
     std::unique_ptr<graph> m_graph;
-    std::unique_ptr<function_node<Message>> m_computeNode;
+    std::unique_ptr<function_node<Message, Message>> m_computeNode;
     std::unique_ptr<limiter_node<Message>> m_limit;
     std::unique_ptr<sequencer_node<Message>> m_ordering;
+    std::unique_ptr<function_node<Message>> m_globalComputeNode;
+
+    using decision_node = multifunction_node<Message, tbb::flow::tuple<continue_msg, Message> >;
+    std::unique_ptr<decision_node> m_decisionNode;
 
     std::random_device m_randomDevice {};
     std::mt19937 m_generator {m_randomDevice()};
@@ -32,7 +45,7 @@ private:
 
     mutable std::shared_mutex m_mutex;
 
-    void processAsync(const size_t id, float* data);
+    double processAsync(const size_t id, float* data);
 };
 
 #endif // PARALLELGRAPH_H
