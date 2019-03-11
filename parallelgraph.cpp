@@ -10,7 +10,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel /*= 8*/)
     auto f = [this] (Message msg) -> Message {
         // Just waste some cpu cycles and memory - simulate decompressing columns
         const size_t size = 20000000;
-        msg.data = new float[size];
+        msg.data.reset(new float[size]);
         for (auto i = 0U; i < size; ++i) {
             msg.data[i] = static_cast<float>(msg.id);
             msg.data[i]++;
@@ -20,9 +20,6 @@ ParallelGraph::ParallelGraph(size_t maxParallel /*= 8*/)
         // Imagine some work was done here with decompressed data
         msg.beta = processAsync(msg.id, msg.data);
 
-        delete[] msg.data;
-        msg.data = nullptr;
-
         return msg;
     };
 
@@ -30,22 +27,16 @@ ParallelGraph::ParallelGraph(size_t maxParallel /*= 8*/)
     m_computeNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
 
     // Decide whether to continue calculations or discard
-    auto g = [] (const decision_node::input_type &input,
+    auto g = [] (decision_node::input_type input,
                  decision_node::output_ports_type &outputPorts) {
 
         std::get<0>(outputPorts).try_put(continue_msg());
 
-        if (input.beta < 0) {
+        if (input.beta < -2) {
             // Do global computation
-            std::get<1>(outputPorts).try_put(input);
+            std::get<1>(outputPorts).try_put(std::move(input));
         } else {
             // Discard
-            std::cout << "Discarding " << input.id
-                      << "; beta:" << input.beta << std::endl;
-
-            delete[] input.data;
-//            input.data = nullptr;
-
             std::get<0>(outputPorts).try_put(continue_msg());
         }
     };
@@ -58,8 +49,13 @@ ParallelGraph::ParallelGraph(size_t maxParallel /*= 8*/)
         std::cout << "Global computation " << msg.id
                   << "; beta: " << msg.beta << std::endl;
 
-        delete[] msg.data;
-        msg.data = nullptr;
+        // Just waste some cpu cycles and memory - simulate calculations
+        const size_t size = 20000000;
+        for (auto i = 0U; i < size; ++i) {
+            msg.data[i] = static_cast<float>(msg.id);
+            msg.data[i]++;
+            msg.data[i]--;
+        }
 
         return continue_msg();
     };
@@ -103,7 +99,7 @@ void ParallelGraph::exec()
 {
     // Push some messages into the top of the graph to be processed - representing the column indices
     for (unsigned int i = 0; i < 1000; ++i) {
-        Message msg { i, nullptr, 0 };
+        Message msg { i };
         m_ordering->try_put(msg);
     }
 
@@ -111,7 +107,7 @@ void ParallelGraph::exec()
     m_graph->wait_for_all();
 }
 
-double ParallelGraph::processAsync(const size_t id, float *data)
+double ParallelGraph::processAsync(const size_t id, const DataPtr &data)
 {
     double beta;
     {

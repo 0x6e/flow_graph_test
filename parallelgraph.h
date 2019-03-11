@@ -16,17 +16,12 @@ public:
     void exec();
 
 private:
+    using DataPtr = std::shared_ptr<float[]>;
+
     struct Message {
         unsigned int id = 0;
-        float* data = nullptr;
+        DataPtr data = nullptr;
         double beta = 0;
-
-        // needs copy?
-
-//        ~Message() {
-//            delete[] data;
-//            data = nullptr;
-//        }
     };
 
     size_t m_maxParallel = 8;
@@ -45,7 +40,7 @@ private:
 
     mutable std::shared_mutex m_mutex;
 
-    double processAsync(const size_t id, float* data);
+    double processAsync(const size_t id, const DataPtr &data);
 };
 
 #endif // PARALLELGRAPH_H
